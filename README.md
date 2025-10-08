@@ -16,9 +16,9 @@ Build a secure, scalable cloud-native platform that showcases:
 
 ### Services
 
-- **API Service** - Node.js REST API
-- **Auth Service** - Authentication microservice
-- **Worker Service** - Python background processing
+- [x] **API Service** - Node.js REST API
+- [x] **Auth Service** - Authentication microservice
+- [ ] **Worker Service** - Python background processing
 
 ### Infrastructure
 
@@ -40,7 +40,8 @@ Build a secure, scalable cloud-native platform that showcases:
 ## Roadmap
 
 - [x] Project initialization
-- [ ] Week 1: Build API service with Docker
+- [x] Week 1: Build API service with Docker
+- [x] Week 1: Build Auth service with JWT
 - [ ] Week 1-2: Local Kubernetes setup (Minikube/Kind)
 - [ ] Week 2: Terraform EKS infrastructure
 - [ ] Week 3: CI/CD pipeline with security scanning
