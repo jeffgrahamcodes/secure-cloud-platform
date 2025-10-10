@@ -16,9 +16,9 @@ Build a secure, scalable cloud-native platform that showcases:
 
 ### Services
 
-- **API Service** - Node.js REST API ✅
-- **Auth Service** - JWT-based authentication ✅
-- **Worker Service** - Python background job processing ✅
+- **API Service** - Node.js REST API
+- **Auth Service** - JWT-based authentication
+- **Worker Service** - Python background job processing
 
 ### Infrastructure
 
@@ -43,7 +43,8 @@ Build a secure, scalable cloud-native platform that showcases:
 - [x] Week 1: Build API service with Docker
 - [x] Week 1: Build Auth service with JWT
 - [x] Week 1: Build Worker service with Python
-- [ ] Week 1-2: Local Kubernetes setup (Minikube/Kind)
+- [x] Week 1: Deploy API service to Kubernetes
+- [ ] Weekend: Deploy all services to Kubernetes
 - [ ] Week 2: Terraform EKS infrastructure
 - [ ] Week 3: CI/CD pipeline with security scanning
 - [ ] Week 4: Advanced K8s security (NetworkPolicies, RBAC)
@@ -53,13 +54,13 @@ Build a secure, scalable cloud-native platform that showcases:
 
 ### Prerequisites
 
-- Docker
-- Node.js 18+
-- Python 3.11+
-- Kubernetes (coming soon)
-- Terraform (coming soon)
+- Docker and Docker Compose
+- Kubernetes (Minikube for local development)
+- kubectl
+- Node.js 18+ (for local development)
+- Python 3.11+ (for local development)
 
-### Running Services Locally
+### Running Services Individually with Docker
 
 **API Service:**
 
@@ -85,19 +86,73 @@ docker build -t worker-service .
 docker run -p 3002:3002 worker-service
 ```
 
-### Testing the Services
+### Running on Kubernetes (Local)
+
+**Prerequisites:**
+
+- Minikube installed and running (`minikube start`)
+- kubectl installed
+
+**Quick Start:**
 
 ```bash
-# API Service
+# Build image for Minikube
+eval $(minikube docker-env)
+cd apps/api-service
+docker build -t api-service:v1 .
+cd ../..
+eval $(minikube docker-env -u)
+
+# Deploy to Kubernetes
+kubectl apply -f k8s/api-service/
+
+# Access the service (keep terminal open)
+minikube service api-service --url
+```
+
+**Verify deployment:**
+
+```bash
+# Check pods are running
+kubectl get pods
+
+# Check service
+kubectl get services
+
+# View logs
+kubectl logs -l app=api-service
+```
+
+**Test the service:**
+
+```bash
+# Use the URL from 'minikube service api-service --url'
+curl http://127.0.0.1:<port>/health
+curl http://127.0.0.1:<port>/api/users
+```
+
+For detailed Kubernetes usage, see [Kubernetes Guide](k8s/README.md).
+
+### Testing the Services
+
+**API Service:**
+
+```bash
 curl http://localhost:3000/health
 curl http://localhost:3000/api/users
+```
 
-# Auth Service
+**Auth Service:**
+
+```bash
 curl -X POST http://localhost:3001/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin123"}'
+```
 
-# Worker Service
+**Worker Service:**
+
+```bash
 curl http://localhost:3002/health
 curl -X POST http://localhost:3002/jobs \
   -H "Content-Type: application/json" \
@@ -119,8 +174,11 @@ secure-cloud-platform/
 │   ├── api-service/          # Node.js REST API
 │   ├── auth-service/         # JWT authentication service
 │   └── worker-service/       # Python background worker
-├── terraform/                # Infrastructure as Code
-├── .github/workflows/        # CI/CD pipelines
+├── k8s/                      # Kubernetes manifests
+│   ├── api-service/          # API service K8s deployment
+│   └── README.md             # K8s documentation
+├── terraform/                # Infrastructure as Code (coming soon)
+├── .github/workflows/        # CI/CD pipelines (coming soon)
 ├── docs/                     # Additional documentation
 └── README.md                 # This file
 ```
@@ -139,7 +197,7 @@ secure-cloud-platform/
 This project demonstrates proficiency in:
 
 - Microservices architecture
-- Container orchestration
+- Container orchestration with Kubernetes
 - Infrastructure as Code
 - DevSecOps practices
 - Cloud-native development
