@@ -44,7 +44,8 @@ Build a secure, scalable cloud-native platform that showcases:
 - [x] Week 1: Build Auth service with JWT
 - [x] Week 1: Build Worker service with Python
 - [x] Week 1: Deploy API service to Kubernetes
-- [ ] Weekend: Deploy all services to Kubernetes
+- [x] Weekend: Deploy all services to Kubernetes
+- [ ] Week 2: Service-to-service communication in K8s
 - [ ] Week 2: Terraform EKS infrastructure
 - [ ] Week 3: CI/CD pipeline with security scanning
 - [ ] Week 4: Advanced K8s security (NetworkPolicies, RBAC)
@@ -96,18 +97,36 @@ docker run -p 3002:3002 worker-service
 **Quick Start:**
 
 ```bash
-# Build image for Minikube
+# Build images for Minikube
 eval $(minikube docker-env)
-cd apps/api-service
-docker build -t api-service:v1 .
-cd ../..
+
+# Build all service images
+cd apps/api-service && docker build -t api-service:v1 . && cd ../..
+cd apps/auth-service && docker build -t auth-service:v1 . && cd ../..
+cd apps/worker-service && docker build -t worker-service:v1 . && cd ../..
+
 eval $(minikube docker-env -u)
 
-# Deploy to Kubernetes
+# Deploy all services to Kubernetes
 kubectl apply -f k8s/api-service/
+kubectl apply -f k8s/auth-service/
+kubectl apply -f k8s/worker-service/
 
-# Access the service (keep terminal open)
+# Verify all pods are running
+kubectl get pods
+```
+
+**Access services:**
+
+```bash
+# API Service (keep terminal open)
 minikube service api-service --url
+
+# Auth Service (in new terminal)
+minikube service auth-service --url
+
+# Worker Service (in new terminal)
+minikube service worker-service --url
 ```
 
 **Verify deployment:**
@@ -123,12 +142,23 @@ kubectl get services
 kubectl logs -l app=api-service
 ```
 
-**Test the service:**
+**Test the services:**
 
 ```bash
-# Use the URL from 'minikube service api-service --url'
+# API Service (use URL from minikube service api-service --url)
 curl http://127.0.0.1:<port>/health
 curl http://127.0.0.1:<port>/api/users
+
+# Auth Service (use URL from minikube service auth-service --url)
+curl -X POST http://127.0.0.1:<port>/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+
+# Worker Service (use URL from minikube service worker-service --url)
+curl http://127.0.0.1:<port>/health
+curl -X POST http://127.0.0.1:<port>/jobs \
+  -H "Content-Type: application/json" \
+  -d '{"type":"email"}'
 ```
 
 For detailed Kubernetes usage, see [Kubernetes Guide](k8s/README.md).
@@ -164,6 +194,7 @@ curl -X POST http://localhost:3002/jobs \
 I'm documenting this journey on [Dev.to](https://dev.to/jeffgrahamcodes):
 
 - [What is DevOps? A Definition from a Teacher Transitioning to DevSecOps](https://dev.to/jeffgrahamcodes/what-is-devops-a-definition-from-a-teacher-transitioning-to-devsecops-3b6n)
+- [3 Microservices, 3 Days: What I Learned About DevOps Architecture](https://dev.to/jeffgrahamcodes/3-microservices-3-days-what-i-learned-about-devops-architecture-23n0)
 - More posts coming as I build...
 
 ## Project Structure
