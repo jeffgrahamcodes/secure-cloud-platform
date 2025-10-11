@@ -44,8 +44,8 @@ Build a secure, scalable cloud-native platform that showcases:
 - [x] Week 1: Build Auth service with JWT
 - [x] Week 1: Build Worker service with Python
 - [x] Week 1: Deploy API service to Kubernetes
-- [x] Weekend: Deploy all services to Kubernetes
-- [ ] Week 2: Service-to-service communication in K8s
+- [x] Week 1: Deploy all services to Kubernetes
+- [x] Week 1: Service-to-service communication in K8s
 - [ ] Week 2: Terraform EKS infrastructure
 - [ ] Week 3: CI/CD pipeline with security scanning
 - [ ] Week 4: Advanced K8s security (NetworkPolicies, RBAC)
@@ -163,6 +163,43 @@ curl -X POST http://127.0.0.1:<port>/jobs \
 
 For detailed Kubernetes usage, see [Kubernetes Guide](k8s/README.md).
 
+### Service-to-Service Communication in Kubernetes
+
+Services communicate internally using Kubernetes DNS. Each service can reach others by name:
+
+```bash
+# From any pod in the cluster:
+curl http://api-service:3000/health
+curl http://auth-service:3001/health
+curl http://worker-service:3002/health
+```
+
+**Testing communication:**
+
+```bash
+# Run a test pod with curl
+kubectl run curl-test --image=curlimages/curl -it --rm -- sh
+
+# Inside the pod, test services
+curl http://auth-service:3001/health
+curl http://worker-service:3002/health
+
+# Test auth flow
+curl -X POST http://auth-service:3001/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+
+# Exit (pod auto-deletes)
+exit
+```
+
+**How it works:**
+
+- Kubernetes DNS automatically resolves service names to pod IPs
+- Services load-balance across multiple pod replicas
+- Pods can restart/move - DNS continues to work
+- No hardcoded IP addresses needed
+
 ### Testing the Services
 
 **API Service:**
@@ -207,6 +244,8 @@ secure-cloud-platform/
 │   └── worker-service/       # Python background worker
 ├── k8s/                      # Kubernetes manifests
 │   ├── api-service/          # API service K8s deployment
+│   ├── auth-service/         # Auth service K8s deployment
+│   ├── worker-service/       # Worker service K8s deployment
 │   └── README.md             # K8s documentation
 ├── terraform/                # Infrastructure as Code (coming soon)
 ├── .github/workflows/        # CI/CD pipelines (coming soon)
