@@ -16,22 +16,22 @@ Build a secure, scalable cloud-native platform that showcases:
 
 ### Services
 
-- **API Service** - Node.js REST API
-- **Auth Service** - JWT-based authentication
-- **Worker Service** - Python background job processing
+- **API Service** - Node.js REST API (Port 3000)
+- **Auth Service** - JWT-based authentication (Port 3001)
+- **Worker Service** - Python background job processing (Port 3002)
 
 ### Infrastructure
 
 - AWS EKS for Kubernetes orchestration
 - Terraform for infrastructure provisioning
-- GitHub Actions for CI/CD
-- Container security scanning (Trivy)
-- Network policies and RBAC
+- GitHub Actions for CI/CD (coming soon)
+- Container security scanning with Trivy (coming soon)
+- Network policies and RBAC (coming soon)
 
 ## Tech Stack
 
 - **Languages:** Node.js, Python
-- **Infrastructure:** Terraform, AWS (EKS, VPC, RDS)
+- **Infrastructure:** Terraform, AWS (EKS, VPC, ECR)
 - **Containers:** Docker, Kubernetes
 - **CI/CD:** GitHub Actions
 - **Security:** Trivy, Checkov, AWS Security Hub
@@ -46,7 +46,8 @@ Build a secure, scalable cloud-native platform that showcases:
 - [x] Week 1: Deploy API service to Kubernetes
 - [x] Week 1: Deploy all services to Kubernetes
 - [x] Week 1: Service-to-service communication in K8s
-- [ ] Week 2: Terraform EKS infrastructure
+- [x] Week 2: Terraform EKS infrastructure
+- [x] Week 2: Deploy to AWS EKS (production environment)
 - [ ] Week 3: CI/CD pipeline with security scanning
 - [ ] Week 4: Advanced K8s security (NetworkPolicies, RBAC)
 - [ ] Week 5+: Monitoring and observability
@@ -58,6 +59,7 @@ Build a secure, scalable cloud-native platform that showcases:
 - Docker and Docker Compose
 - Kubernetes (Minikube for local development)
 - kubectl
+- AWS CLI (for EKS deployment)
 - Node.js 18+ (for local development)
 - Python 3.11+ (for local development)
 
@@ -129,39 +131,64 @@ minikube service auth-service --url
 minikube service worker-service --url
 ```
 
-**Verify deployment:**
+For detailed local Kubernetes usage, see [Kubernetes Guide](k8s/README.md).
+
+### Deploying to AWS EKS
+
+**Prerequisites:**
+
+- AWS EKS cluster provisioned
+- `kubectl` configured for your EKS cluster
+- AWS ECR repository access
+- Docker buildx for multi-platform builds
+
+**Build for EKS (AMD64 architecture):**
 
 ```bash
-# Check pods are running
-kubectl get pods
+# Setup multi-platform builder (one-time)
+docker buildx create --name multiplatform --driver docker-container --use
+docker buildx inspect --bootstrap
 
-# Check service
+# Login to ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 023231074087.dkr.ecr.us-east-1.amazonaws.com
+
+# Build and push all services
+cd apps/api-service
+docker buildx build --platform linux/amd64 \
+  -t 023231074087.dkr.ecr.us-east-1.amazonaws.com/secure-cloud-platform/api-service:v1 \
+  --push .
+
+cd ../auth-service
+docker buildx build --platform linux/amd64 \
+  -t 023231074087.dkr.ecr.us-east-1.amazonaws.com/secure-cloud-platform/auth-service:v1 \
+  --push .
+
+cd ../worker-service
+docker buildx build --platform linux/amd64 \
+  -t 023231074087.dkr.ecr.us-east-1.amazonaws.com/secure-cloud-platform/worker-service:v1 \
+  --push .
+```
+
+**Deploy to EKS:**
+
+```bash
+# Connect to EKS cluster
+aws eks update-kubeconfig --name your-cluster-name --region us-east-1
+
+# Deploy all services
+kubectl apply -f k8s-eks/api-service/
+kubectl apply -f k8s-eks/auth-service/
+kubectl apply -f k8s-eks/worker-service/
+
+# Verify deployment
+kubectl get pods
 kubectl get services
 
-# View logs
-kubectl logs -l app=api-service
+# Get API LoadBalancer URL
+kubectl get service api-service
 ```
 
-**Test the services:**
-
-```bash
-# API Service (use URL from minikube service api-service --url)
-curl http://127.0.0.1:<port>/health
-curl http://127.0.0.1:<port>/api/users
-
-# Auth Service (use URL from minikube service auth-service --url)
-curl -X POST http://127.0.0.1:<port>/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
-
-# Worker Service (use URL from minikube service worker-service --url)
-curl http://127.0.0.1:<port>/health
-curl -X POST http://127.0.0.1:<port>/jobs \
-  -H "Content-Type: application/json" \
-  -d '{"type":"email"}'
-```
-
-For detailed Kubernetes usage, see [Kubernetes Guide](k8s/README.md).
+For detailed EKS deployment instructions, troubleshooting, and architecture details, see [EKS Deployment Guide](k8s-eks/README.md).
 
 ### Service-to-Service Communication in Kubernetes
 
@@ -230,9 +257,10 @@ curl -X POST http://localhost:3002/jobs \
 
 I'm documenting this journey on [Dev.to](https://dev.to/jeffgrahamcodes):
 
-- [What is DevOps? A Definition from a Teacher Transitioning to DevSecOps](https://dev.to/jeffgrahamcodes/what-is-devops-a-definition-from-a-teacher-transitioning-to-devsecops-3b6n)
-- [3 Microservices, 3 Days: What I Learned About DevOps Architecture](https://dev.to/jeffgrahamcodes/3-microservices-3-days-what-i-learned-about-devops-architecture-23n0)
-- More posts coming as I build...
+1. [What is DevOps? A Definition from a Teacher Transitioning to DevSecOps](https://dev.to/jeffgrahamcodes/what-is-devops-a-definition-from-a-teacher-transitioning-to-devsecops-3b6n)
+2. [3 Microservices, 3 Days: What I Learned About DevOps Architecture](https://dev.to/jeffgrahamcodes/3-microservices-3-days-what-i-learned-about-devops-architecture-23n0)
+3. [From Docker Containers to Kubernetes Pods: Deploying My First Microservices Platform](https://dev.to/jeffgrahamcodes/from-docker-containers-to-kubernetes-pods-deploying-my-first-microservices-platform-30a7)
+4. More posts coming as I build...
 
 ## Project Structure
 
@@ -242,11 +270,16 @@ secure-cloud-platform/
 │   ├── api-service/          # Node.js REST API
 │   ├── auth-service/         # JWT authentication service
 │   └── worker-service/       # Python background worker
-├── k8s/                      # Kubernetes manifests
+├── k8s/                      # Kubernetes manifests (Minikube)
 │   ├── api-service/          # API service K8s deployment
 │   ├── auth-service/         # Auth service K8s deployment
 │   ├── worker-service/       # Worker service K8s deployment
-│   └── README.md             # K8s documentation
+│   └── README.md             # Local K8s documentation
+├── k8s-eks/                  # Kubernetes manifests (AWS EKS)
+│   ├── api-service/          # API service EKS deployment
+│   ├── auth-service/         # Auth service EKS deployment
+│   ├── worker-service/       # Worker service EKS deployment
+│   └── README.md             # EKS deployment guide
 ├── terraform/                # Infrastructure as Code (coming soon)
 ├── .github/workflows/        # CI/CD pipelines (coming soon)
 ├── docs/                     # Additional documentation
@@ -256,10 +289,12 @@ secure-cloud-platform/
 ## Security Considerations
 
 - All services implement security best practices
-- Container security scanning integrated
+- Container security scanning (coming soon)
 - JWT-based authentication
 - Environment-based secrets management
-- Network policies and RBAC (coming with Kubernetes)
+- Multi-platform Docker builds (ARM64 → AMD64)
+- Resource limits and health checks on all pods
+- Network policies and RBAC (coming soon)
 - Regular security audits planned
 
 ## Learning Goals
@@ -268,10 +303,12 @@ This project demonstrates proficiency in:
 
 - Microservices architecture
 - Container orchestration with Kubernetes
-- Infrastructure as Code
+- Multi-environment deployments (local and cloud)
+- Infrastructure as Code (in progress)
 - DevSecOps practices
-- Cloud-native development
-- CI/CD automation
+- Cloud-native development on AWS
+- Platform architecture and cross-compilation
+- CI/CD automation (coming soon)
 
 ## About
 
